@@ -10,6 +10,8 @@ from .libellula import (
     batch,
     compact,
     typecheck,
+    transpose,
+    curry
 )
 
 __all__ = [
@@ -24,6 +26,8 @@ __all__ = [
     "batch",
     "compact",
     "typecheck",
+    "transpose",
+    "curry"
 ]
 
 del libellula

@@ -1,9 +1,9 @@
 [project]
 name = "libellula"
-version = "0.1.0"
+version = "1.2.1"
 description = "humble utils"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = []
 authors = [
     {name = "Pietro", email = "pietromax.marsella@gmail.com"}

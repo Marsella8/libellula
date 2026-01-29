@@ -1,5 +1,5 @@
 import pytest
-from libellula import argmax, argmin, group_by, flatmap, flatten, get_only, get_any, compose, batch, compact, typecheck
+from libellula import argmax, argmin, group_by, flatmap, flatten, get_only, get_any, compose, batch, compact, typecheck, transpose, curry
 
 
 class TestArgmax:
@@ -269,3 +269,42 @@ class TestCompact:
     def test_empty_iterable(self):
         result = list(compact([]))
         assert result == []
+
+
+class TestTranspose:
+    def test_basic_transpose(self):
+        result = list(transpose([[1, 2], [3, 4]]))
+        assert result == [(1, 3), (2, 4)]
+
+    def test_transpose_3x3(self):
+        result = list(transpose([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        assert result == [(1, 4, 7), (2, 5, 8), (3, 6, 9)]
+
+    def test_transpose_rectangular(self):
+        result = list(transpose([[1, 2, 3], [4, 5, 6]]))
+        assert result == [(1, 4), (2, 5), (3, 6)]
+
+    def test_transpose_single_row(self):
+        result = list(transpose([[1, 2, 3]]))
+        assert result == [(1,), (2,), (3,)]
+
+    def test_transpose_single_column(self):
+        result = list(transpose([[1], [2], [3]]))
+        assert result == [(1, 2, 3)]
+
+    def test_empty_iterable(self):
+        result = list(transpose([]))
+        assert result == []
+
+    def test_mismatched_lengths_raises(self):
+        with pytest.raises(ValueError):
+            list(transpose([[1, 2], [3, 4, 5]]))
+
+class TestCurry:
+    def test_basic(self):
+        @curry
+        def f(a,b,c):
+            return a + b + c
+
+        assert f(1)(2)(3) == 6
+        assert f(100)(10)(1) == 111

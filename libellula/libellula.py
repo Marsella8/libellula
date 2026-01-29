@@ -1,10 +1,16 @@
 from collections.abc import Iterable, Callable
 from collections import defaultdict
 from functools import wraps
-from inspect import signature
+from inspect import signature, Parameter
+from typing import TypeVar, ParamSpec
+
+T = TypeVar('T')
+V = TypeVar('V')
+P = ParamSpec('P')
+R = TypeVar('R')
 
 
-def argmax[T, V](it: Iterable[T], f: Callable[[T], V] = lambda x: x) -> int:
+def argmax(it: Iterable[T], f: Callable[[T], V] = lambda x: x) -> int:
     """Return index of maximum element. Example: argmax([1, 5, 3]) → 1"""
     it = iter(it)
     try:
@@ -20,7 +26,7 @@ def argmax[T, V](it: Iterable[T], f: Callable[[T], V] = lambda x: x) -> int:
     return best
 
 
-def group_by[T, V](it: Iterable[T], f: Callable[[T], V]) -> dict[V, list[T]]:
+def group_by(it: Iterable[T], f: Callable[[T], V]) -> dict[V, list[T]]:
     """Group elements by key function. Example: group_by([1,2,3,4], lambda x: x % 2) → {1: [1,3], 0: [2,4]}"""
     it = list(it)
     groups: defaultdict[V, list[T]] = defaultdict(list)
@@ -29,19 +35,19 @@ def group_by[T, V](it: Iterable[T], f: Callable[[T], V]) -> dict[V, list[T]]:
     return dict(groups)
 
 
-def flatmap[T, V](it: Iterable[T], f: Callable[[T], Iterable[V]]) -> Iterable[V]:
+def flatmap(it: Iterable[T], f: Callable[[T], Iterable[V]]) -> Iterable[V]:
     """Map and flatten in one step. Example: flatmap([1,2,3], lambda x: [x, x*10]) → [1,10,2,20,3,30]"""
     for elem in it:
         yield from f(elem)
 
 
-def flatten[T](it: Iterable[Iterable[T]]) -> Iterable[T]:
+def flatten(it: Iterable[Iterable[T]]) -> Iterable[T]:
     """Flatten one level of nesting. Example: flatten([[1,2],[3,4]]) → [1,2,3,4]"""
     for elem in it:
         yield from elem
 
 
-def get_only[T](it: Iterable[T]) -> T:
+def get_only(it: Iterable[T]) -> T:
     """Extract single element, error if not exactly one. Example: get_only([42]) → 42"""
     lit: list[T] = list(it)
     if len(lit) != 1:
@@ -49,7 +55,7 @@ def get_only[T](it: Iterable[T]) -> T:
     return lit[0]
 
 
-def get_any[T](it: Iterable[T]) -> T:
+def get_any(it: Iterable[T]) -> T:
     """Return first element. Example: get_any([1,2,3]) → 1"""
     try:
         return next(iter(it))
@@ -57,7 +63,7 @@ def get_any[T](it: Iterable[T]) -> T:
         raise ValueError("get_any cannot be requested for an empty iterator")
 
 
-def argmin[T, V](it: Iterable[T], f: Callable[[T], V] = lambda x: x) -> int:
+def argmin(it: Iterable[T], f: Callable[[T], V] = lambda x: x) -> int:
     """Return index of minimum element. Example: argmin([5, 1, 3]) → 1"""
     it = iter(it)
     try:
@@ -73,7 +79,7 @@ def argmin[T, V](it: Iterable[T], f: Callable[[T], V] = lambda x: x) -> int:
     return best
 
 
-def compose[**P, R](*funcs: Callable) -> Callable[P, R]:
+def compose(*funcs: Callable) -> Callable[P, R]:
     """Compose functions right-to-left. Example: compose(lambda x: x+1, lambda x: x*2)(3) → 7"""
     def inner(*args: P.args, **kwargs: P.kwargs) -> R:
         result = funcs[-1](*args, **kwargs)
@@ -84,7 +90,7 @@ def compose[**P, R](*funcs: Callable) -> Callable[P, R]:
     return inner
 
 
-def batch[T](it: Iterable[T], n: int) -> Iterable[list[T]]:
+def batch(it: Iterable[T], n: int) -> Iterable[list[T]]:
     """Split iterable into fixed-size chunks. Example: batch([1,2,3,4,5], 2) → [[1,2],[3,4],[5]]"""
     if n < 1:
         raise ValueError("batch size must be at least 1")
@@ -94,12 +100,15 @@ def batch[T](it: Iterable[T], n: int) -> Iterable[list[T]]:
         yield chunk
 
 
-def compact[T](it: Iterable[T | None]) -> Iterable[T]:
+def compact(it: Iterable[T | None]) -> Iterable[T]:
     """Remove None values, keep all others. Example: compact([1, None, 2, None]) → [1, 2]"""
     for elem in it:
         if elem is not None:
             yield elem
 
+def transpose(it: Iterable[Iterable[T]]) -> Iterable[tuple[T, ...]]:
+    """Transpose rows and columns. Example: transpose([[1,2],[3,4]]) → [(1,3),(2,4)]"""
+    return zip(*it, strict=True)
 
 def typecheck(func: Callable):
     """Decorator to validate function argument and return types at runtime."""
@@ -124,3 +133,25 @@ def typecheck(func: Callable):
 
     return inner
 
+def _has_only_fixed_args(fn) -> bool:
+    sig = signature(fn)
+    return all(p.kind not in (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD) for p in sig.parameters.values())
+
+def curry(func: Callable):
+    sig = signature(func)
+    if not _has_only_fixed_args(func):
+        raise ValueError("Function must not use *args or **kwargs")
+
+    n = len(sig.parameters)
+    if n == 0:
+        return func
+
+    @wraps(func)
+    def step(*args_acc):
+        if len(args_acc) > n:
+            raise TypeError(f"Too many arguments: expected {n}, got {len(args_acc)}")
+        if len(args_acc) == n:
+            return func(*args_acc)
+        return lambda *more: step(*args_acc, *more)
+
+    return step
