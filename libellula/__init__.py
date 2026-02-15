@@ -9,6 +9,7 @@ from .libellula import (
     compose,
     batch,
     compact,
+    must,
     typecheck,
     transpose,
     curry
@@ -25,6 +26,7 @@ __all__ = [
     "compose",
     "batch",
     "compact",
+    "must",
     "typecheck",
     "transpose",
     "curry"

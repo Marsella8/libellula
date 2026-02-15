@@ -1,5 +1,20 @@
 import pytest
-from libellula import argmax, argmin, group_by, flatmap, flatten, get_only, get_any, compose, batch, compact, typecheck, transpose, curry
+from libellula import (
+    argmax,
+    argmin,
+    group_by,
+    flatmap,
+    flatten,
+    get_only,
+    get_any,
+    compose,
+    batch,
+    compact,
+    must,
+    typecheck,
+    transpose,
+    curry,
+)
 
 
 class TestArgmax:
@@ -300,10 +315,83 @@ class TestTranspose:
         with pytest.raises(ValueError):
             list(transpose([[1, 2], [3, 4, 5]]))
 
+
+class TestMust:
+    def test_with_value(self):
+        assert must(42) == 42
+        assert must("hello") == "hello"
+        assert must([1, 2, 3]) == [1, 2, 3]
+
+    def test_with_none_raises(self):
+        with pytest.raises(ValueError, match="must\\(\\) called on None value"):
+            must(None)
+
+    def test_preserves_falsy_values(self):
+        assert must(0) == 0
+        assert must("") == ""
+        assert must(False) is False
+        assert must([]) == []
+
+
 class TestCurry:
-    def test_basic(self):
+    def test_basic_curry(self):
+        def add(a, b):
+            return a + b
+        
+        curried = curry(add)
+        assert curried(1)(2) == 3
+        assert curried(5)(10) == 15
+
+    def test_curry_three_args(self):
+        def add3(a, b, c):
+            return a + b + c
+        
+        curried = curry(add3)
+        assert curried(1)(2)(3) == 6
+        assert curried(10)(20)(30) == 60
+
+    def test_curry_partial_application(self):
+        def multiply(a, b, c):
+            return a * b * c
+        
+        curried = curry(multiply)
+        times2 = curried(2)
+        times2_3 = times2(3)
+        assert times2_3(4) == 24
+
+    def test_curry_all_at_once(self):
+        def add(a, b):
+            return a + b
+        
+        curried = curry(add)
+        assert curried(1, 2) == 3
+
+    def test_curry_mixed_application(self):
+        def add3(a, b, c):
+            return a + b + c
+        
+        curried = curry(add3)
+        assert curried(1, 2)(3) == 6
+        assert curried(1)(2, 3) == 6
+
+    def test_curry_zero_args(self):
+        def get_value():
+            return 42
+        
+        curried = curry(get_value)
+        assert curried() == 42
+
+    def test_curry_too_many_args_raises(self):
+        def add(a, b):
+            return a + b
+        
+        curried = curry(add)
+        with pytest.raises(TypeError, match="Too many arguments"):
+            curried(1, 2, 3)
+
+    def test_decorator_usage(self):
         @curry
-        def f(a,b,c):
+        def f(a, b, c):
             return a + b + c
 
         assert f(1)(2)(3) == 6

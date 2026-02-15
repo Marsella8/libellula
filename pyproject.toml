@@ -1,6 +1,6 @@
 [project]
 name = "libellula"
-version = "1.2.1"
+version = "1.2.2"
 description = "humble utils"
 readme = "README.md"
 requires-python = ">=3.13"

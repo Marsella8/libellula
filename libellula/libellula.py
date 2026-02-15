@@ -106,6 +106,14 @@ def compact(it: Iterable[T | None]) -> Iterable[T]:
         if elem is not None:
             yield elem
 
+
+def must(value: T | None) -> T:
+    """Unwrap optional value, error if None. Example: must(42) → 42, must(None) → ValueError"""
+    if value is None:
+        raise ValueError("must() called on None value")
+    return value
+
+
 def transpose(it: Iterable[Iterable[T]]) -> Iterable[tuple[T, ...]]:
     """Transpose rows and columns. Example: transpose([[1,2],[3,4]]) → [(1,3),(2,4)]"""
     return zip(*it, strict=True)
